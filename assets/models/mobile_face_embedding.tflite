@@ -1,0 +1,4 @@
+Placeholder for a TensorFlow Lite face embedding model.
+
+Replace this file with a valid MobileFaceNet/FaceNet `.tflite` model before
+using on-device face enrollment or face attendance in production.

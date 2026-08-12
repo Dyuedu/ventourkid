@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="launch_background">#DBEAFE</color>
+    <!-- Match logo cream so adaptive icon has one unified fill -->
+    <color name="ic_launcher_background">#F8F5F0</color>
+</resources>

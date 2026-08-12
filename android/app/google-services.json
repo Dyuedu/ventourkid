@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "664674021317",
+    "project_id": "ventourkid",
+    "storage_bucket": "ventourkid.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:664674021317:android:090eb6a5c38122d16365ac",
+        "android_client_info": {
+          "package_name": "com.ventourkids.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBd0ewVeZAt6e4yJBohOWg-0-vA63-5Be4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

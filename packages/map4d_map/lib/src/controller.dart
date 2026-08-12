@@ -1,0 +1,331 @@
+part of map4d_map;
+
+class MFMapViewController {
+  final int mapId;
+  final _MFMapViewState _mapState;
+  final MethodChannel _channel;
+
+  MFMapViewController._(this.mapId, this._mapState, this._channel) {
+    _channel.setMethodCallHandler((call) => _handleMethodCall(call));
+  }
+
+  /// Initialize control of a [Map4d] with [mapId].
+  ///
+  /// Mainly for internal use when instantiating a [MFMapViewController] passed
+  /// in [Map4dMap.onMapCreated] callback.
+  static Future<MFMapViewController> init(
+    int mapId,
+    _MFMapViewState mapState,
+  ) async {
+    final channel = MethodChannel('plugin:map4d-map-view-type_$mapId');
+    await _init(channel);
+    return MFMapViewController._(mapId, mapState, channel);
+  }
+
+  static Future<void> _init(MethodChannel channel) {
+    return channel.invokeMethod<void>('map#waitForMap');
+  }
+
+  Future<dynamic> _handleMethodCall(MethodCall call) async {
+    switch (call.method) {
+      case 'camera#onMoveStarted':
+        if (_mapState.widget.onCameraMoveStarted != null) {
+          _mapState.widget.onCameraMoveStarted!();
+        }
+        break;
+      case 'camera#onMove':
+        if (_mapState.widget.onCameraMove != null) {
+          final position = MFCameraPosition.fromMap(call.arguments['position']);
+          _mapState.widget.onCameraMove!(position!);
+        }
+        break;
+      case 'camera#onIdle':
+        if (_mapState.widget.onCameraIdle != null) {
+          _mapState.widget.onCameraIdle!();
+        }
+        break;
+      case 'poi#onTap':
+        _mapState.onPOITap(MFPOIId(call.arguments['poiId']));
+        break;
+      case 'building#onTap':
+        _mapState.onBuildingTap(MFBuildingId(call.arguments['buildingId']));
+        break;
+      case 'polyline#onTap':
+        _mapState.onPolylineTap(MFPolylineId(call.arguments['polylineId']));
+        break;
+      case 'polygon#onTap':
+        _mapState.onPolygonTap(MFPolygonId(call.arguments['polygonId']));
+        break;
+      case 'circle#onTap':
+        _mapState.onCircleTap(MFCircleId(call.arguments['circleId']));
+        break;
+      case 'marker#onTap':
+        _mapState.onMarkerTap(MFMarkerId(call.arguments['markerId']));
+        break;
+      case 'infoWindow#onTap':
+        _mapState.onInfoWindowTap(MFMarkerId(call.arguments['markerId']));
+        break;
+      case 'marker#onDragEnd':
+        final markerId = MFMarkerId(call.arguments['markerId']);
+        final position = MFLatLng.fromJson(call.arguments['position']);
+        if (position == null) {
+          return;
+        }
+        _mapState.onMarkerDragEnd(markerId, position);
+        break;
+      case 'directionsRenderer#onRouteTap':
+        final rendererId = MFDirectionsRendererId(call.arguments['rendererId']);
+        final routeIndex = call.arguments['routeIndex'];
+        _mapState.onDirectionTap(rendererId, routeIndex);
+        break;
+      case 'map#didTapAtCoordinate':
+        if (_mapState.widget.onTap != null) {
+          final coordinate = MFLatLng.fromJson(call.arguments['coordinate']);
+          _mapState.widget.onTap!(coordinate!);
+        }
+        break;
+      case 'map#onTapPOI':
+        final onPOITap = _mapState.widget.onPOITap;
+        if (onPOITap != null) {
+          final String placeId = call.arguments['placeId'];
+          final String name = call.arguments['name'];
+          final MFLatLng location =
+              MFLatLng.fromJson(call.arguments['location'])!;
+          onPOITap(placeId, name, location);
+        }
+        break;
+      case 'map#onTapBuilding':
+        final onBuildingTap = _mapState.widget.onBuildingTap;
+        if (onBuildingTap != null) {
+          final String buildingId = call.arguments['buildingId'];
+          final String name = call.arguments['name'];
+          final MFLatLng location =
+              MFLatLng.fromJson(call.arguments['location'])!;
+          onBuildingTap(buildingId, name, location);
+        }
+        break;
+      case 'map#onTapPlace':
+        final onPlaceTap = _mapState.widget.onPlaceTap;
+        if (onPlaceTap != null) {
+          final String name = call.arguments['name'];
+          final MFLatLng location =
+              MFLatLng.fromJson(call.arguments['location'])!;
+          onPlaceTap(name, location);
+        }
+        break;
+      case 'map#onTapDataSourceFeature':
+        final onDataSourceFeatureTap = _mapState.widget.onDataSourceFeatureTap;
+        if (onDataSourceFeatureTap != null) {
+          final MFDataSourceFeature feature =
+              MFDataSourceFeature.fromJson(call.arguments['feature'])!;
+          final MFLatLng location =
+              MFLatLng.fromJson(call.arguments['location'])!;
+          onDataSourceFeatureTap(feature, location);
+        }
+        break;
+      default:
+        print('Unknow callback method: ${call.method}');
+    }
+  }
+
+  /// Returns the current zoom level of the map
+  Future<double> getZoomLevel() async {
+    return (await _channel.invokeMethod<double>('map#getZoomLevel'))!;
+  }
+
+  Future<void> moveCamera(MFCameraUpdate cameraUpdate) {
+    return _channel.invokeMethod<void>('camera#move',
+        <String, dynamic>{'cameraUpdate': cameraUpdate.toJson()});
+  }
+
+  Future<void> animateCamera(MFCameraUpdate cameraUpdate) {
+    return _channel.invokeMethod<void>('camera#animate',
+        <String, Object>{'cameraUpdate': cameraUpdate.toJson()});
+  }
+
+  Future<MFCameraPosition> cameraForBounds(MFLatLngBounds bounds,
+      {double padding = 0}) async {
+    final Map<String, dynamic> cameraPosition = (await _channel
+        .invokeMapMethod<String, dynamic>('map#cameraForBounds',
+            <String, dynamic>{'bounds': bounds.toJson(), 'padding': padding}))!;
+    return MFCameraPosition.fromMap(cameraPosition)!;
+  }
+
+  Future<MFCameraPosition?> getCameraPosition() async {
+    final Map<String, dynamic> cameraPosition = (await _channel
+        .invokeMapMethod<String, dynamic>('map#getCameraPosition'))!;
+    return MFCameraPosition.fromMap(cameraPosition);
+  }
+
+  Future<double> getMetersForLogicalPixels(double lp) async {
+    return (await _channel.invokeMethod<double>(
+        'map#getMetersForLP', <String, dynamic>{'lp': lp}))!;
+  }
+
+  Future<double> getLogicalPixelsForMeters(double meters) async {
+    return (await _channel.invokeMethod<double>(
+        'map#getLPForMeters', <String, dynamic>{'meters': meters}))!;
+  }
+
+  /// Return [MFLatLngBounds] defining the region that is visible in a map.
+  Future<MFLatLngBounds?> getBounds() async {
+    final Map<String, dynamic> latLngBounds =
+        (await _channel.invokeMapMethod<String, dynamic>('map#getBounds'))!;
+    final MFLatLng? southwest = MFLatLng.fromJson(latLngBounds['southwest']);
+    final MFLatLng? northeast = MFLatLng.fromJson(latLngBounds['northeast']);
+    if (southwest == null || northeast == null) {
+      return null;
+    }
+
+    return MFLatLngBounds(southwest: southwest, northeast: northeast);
+  }
+
+  Future<void> fitBounds(MFLatLngBounds bounds, {double padding = 0}) async {
+    return _channel.invokeMethod<void>('map#fitBounds',
+        <String, dynamic>{'bounds': bounds.toJson(), 'padding': padding});
+  }
+
+  Future<void> setTime(DateTime time) {
+    return _channel.invokeMethod<void>('map#setTime', <String, Object>{'time': time.millisecondsSinceEpoch});
+  }
+
+  Future<void> setSourceOpacity(String source, double opacity) {
+    return _channel.invokeMethod<void>('map#setSourceOpacity',
+        <String, dynamic>{'source': source, 'opacity': opacity});
+  }
+
+  /// Clears the tile cache so that all tiles will be requested again from the
+  /// [TileProvider].
+  ///
+  /// The current tiles from this tile overlay will also be
+  /// cleared from the map after calling this method. The API maintains a small
+  /// in-memory cache of tiles. If you want to cache tiles for longer, you
+  /// should implement an on-disk cache.
+  Future<void> clearTileCache(MFTileOverlayId tileOverlayId) async {
+    return _channel.invokeMethod<void>('tileOverlays#clearTileCache',
+        <String, Object>{'tileOverlayId': tileOverlayId.value});
+  }
+
+  /// Returns the [MFScreenCoordinate] for a given viewport [LatLng].
+  Future<MFScreenCoordinate> getScreenCoordinate(MFLatLng latLng) async {
+    final Map<String, dynamic> coordinate = (await _channel
+        .invokeMapMethod<String, dynamic>('map#getScreenCoordinate',
+            <String, dynamic>{'latLng': latLng.toJson()}))!;
+    return MFScreenCoordinate.fromJson(coordinate)!;
+  }
+
+  /// Returns the [LatLng] for a `screenCoordinate` (in pixels) of the viewport.
+  Future<MFLatLng> getLatLng(MFScreenCoordinate screenCoordinate) async {
+    final List<dynamic> latLng = (await _channel.invokeListMethod<dynamic>(
+        'map#getLatLng',
+        <String, dynamic>{'coordinate': screenCoordinate.toJson()}))!;
+    return MFLatLng.fromJson(latLng)!;
+  }
+
+  /// Updates configuration options of the map user interface.
+  ///
+  /// Change listeners are notified once the update has been made on the
+  /// platform side.
+  ///
+  /// The returned [Future] completes after listeners have been notified.
+  Future<void> _updateMapOptions(Map<String, dynamic> optionsUpdate) {
+    return _channel.invokeMethod<void>(
+      'map#update',
+      <String, dynamic>{'options': optionsUpdate},
+    );
+  }
+
+  /// Updates tile overlays configuration.
+  ///
+  /// Change listeners are notified once the update has been made on the
+  /// platform side.
+  ///
+  /// The returned [Future] completes after listeners have been notified.
+  Future<void> _updateTileOverlays(TileOverlayUpdates tileOverlayUpdates) {
+    return _channel.invokeMethod<void>(
+        'tileOverlays#update', tileOverlayUpdates.toJson());
+  }
+
+  /// Updates image overlays configuration.
+  Future<void> _updateImageOverlays(ImageOverlayUpdates imageOverlayUpdates) {
+    return _channel.invokeMethod<void>(
+        'imageOverlays#update', imageOverlayUpdates.toJson());
+  }
+
+  /// Updates POI configuration.
+  ///
+  /// Change listeners are notified once the update has been made on the
+  /// platform side.
+  ///
+  /// The returned [Future] completes after listeners have been notified.
+  Future<void> _updatePOIs(POIUpdates poiUpdates) {
+    return _channel.invokeMethod<void>('poi#update', poiUpdates.toJson());
+  }
+
+  /// Updates Building configuration.
+  ///
+  /// Change listeners are notified once the update has been made on the
+  /// platform side.
+  ///
+  /// The returned [Future] completes after listeners have been notified.
+  Future<void> _updateBuildings(BuildingUpdates buildingUpdates) {
+    return _channel.invokeMethod<void>(
+        'building#update', buildingUpdates.toJson());
+  }
+
+  /// Updates polyline configuration.
+  ///
+  /// Change listeners are notified once the update has been made on the
+  /// platform side.
+  ///
+  /// The returned [Future] completes after listeners have been notified.
+  Future<void> _updatePolylines(PolylineUpdates polylineUpdates) {
+    return _channel.invokeMethod<void>(
+        'polylines#update', polylineUpdates.toJson());
+  }
+
+  /// Updates polygon configuration.
+  ///
+  /// Change listeners are notified once the update has been made on the
+  /// platform side.
+  ///
+  /// The returned [Future] completes after listeners have been notified.
+  Future<void> _updatePolygons(PolygonUpdates polygonUpdates) {
+    return _channel.invokeMethod<void>(
+        'polygons#update', polygonUpdates.toJson());
+  }
+
+  /// Updates circle configuration.
+  ///
+  /// Change listeners are notified once the update has been made on the
+  /// platform side.
+  ///
+  /// The returned [Future] completes after listeners have been notified.
+  Future<void> _updateCircles(CircleUpdates circleUpdates) {
+    return _channel.invokeMethod<void>(
+        'circles#update', circleUpdates.toJson());
+  }
+
+  /// Updates marker configuration.
+  ///
+  /// Change listeners are notified once the update has been made on the
+  /// platform side.
+  ///
+  /// The returned [Future] completes after listeners have been notified.
+  Future<void> _updateMarkers(MarkerUpdates markerUpdates) {
+    return _channel.invokeMethod<void>(
+        'markers#update', markerUpdates.toJson());
+  }
+
+  /// Updates directions renderer configuration.
+  ///
+  /// Change listeners are notified once the update has been made on the
+  /// platform side.
+  ///
+  /// The returned [Future] completes after listeners have been notified.
+  Future<void> _updateDirectionsRenderers(
+      DirectionsRendererUpdates rendererUpdates) {
+    return _channel.invokeMethod<void>(
+        'directionsRenderers#update', rendererUpdates.toJson());
+  }
+}

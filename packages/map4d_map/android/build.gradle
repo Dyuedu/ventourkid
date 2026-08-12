@@ -1,0 +1,37 @@
+group 'vn.map4d.map.map4d_map'
+version '1.0'
+
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+
+    dependencies {
+        classpath 'com.android.tools.build:gradle:8.1.0'
+    }
+}
+
+rootProject.allprojects {
+    repositories {
+        maven {
+            url = "https://packages.map4d.vn/repository/maven-public"
+        }
+        google()
+    }
+}
+
+apply plugin: 'com.android.library'
+
+android {
+    namespace "vn.map4d.map.map4d_map"
+    compileSdkVersion 33
+    defaultConfig {
+        minSdkVersion 21
+    }
+}
+
+dependencies {
+    implementation 'vn.map4d:Map4dTypes:1.1.+'
+    implementation 'vn.map4d:Map4dMap:3.3.+'
+}
