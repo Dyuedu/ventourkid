@@ -588,11 +588,15 @@ class _OfflineAttendancePageState extends ConsumerState<OfflineAttendancePage> {
     final tourId = _selectedTourId;
     if (tourId == null) return;
     final checkpoint = _checkpoints
-        .where((item) => item.checkpointId == summary.checkpointId)
-        .firstOrNull;
+            .where((item) => item.planItemId == (summary.planItemId ?? _selectedPlanItemId))
+            .firstOrNull ??
+        _checkpoints
+            .where((item) => item.checkpointId == summary.checkpointId)
+            .firstOrNull;
     final session = AttendanceSessionDraft(
       sessionId: summary.sessionId,
-      planItemId: checkpoint?.planItemId ?? _selectedPlanItemId ?? '',
+      planItemId:
+          summary.planItemId ?? checkpoint?.planItemId ?? _selectedPlanItemId ?? '',
       tourId: tourId,
       checkpointId: summary.checkpointId,
       operationVehicleId: _selectedVehicleId ?? '',
@@ -609,7 +613,8 @@ class _OfflineAttendancePageState extends ConsumerState<OfflineAttendancePage> {
       if (!mounted) return;
       setState(() {
         _activeSession = session;
-        _selectedPlanItemId = checkpoint?.planItemId ?? _selectedPlanItemId;
+        _selectedPlanItemId =
+            summary.planItemId ?? checkpoint?.planItemId ?? _selectedPlanItemId;
         _selectedCheckpointId = summary.checkpointId;
         _sessionResults = results;
         _mode = (summary.sessionType ?? '').toUpperCase() == 'FACE'
@@ -863,7 +868,7 @@ class _OfflineAttendancePageState extends ConsumerState<OfflineAttendancePage> {
       _processingFace = true;
       _lastFaceFile = file;
       _lastFaceStudent = null;
-      _message = 'Đang chạy ONNX trên máy...';
+      _message = 'Đang nhận diện khuôn mặt trên máy…';
       _error = null;
     });
 
@@ -1047,15 +1052,15 @@ class _OfflineAttendancePageState extends ConsumerState<OfflineAttendancePage> {
         _commands = commands;
         _activeSession = activeSession ?? _activeSession;
         _message = automatic
-            ? 'Đã tự động sync ${summary.synced} bản ghi, ${summary.conflicts} conflict.'
-            : 'Đã sync ${summary.synced} bản ghi, ${summary.conflicts} conflict.';
+            ? 'Đã tự động đồng bộ ${summary.synced} bản ghi, ${summary.conflicts} xung đột.'
+            : 'Đã đồng bộ ${summary.synced} bản ghi, ${summary.conflicts} xung đột.';
       });
       if (!showSnackBar || !mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Đồng bộ xong: ${summary.synced} OK'
-            '${summary.conflicts > 0 ? ', ${summary.conflicts} conflict' : ''}.',
+            'Đồng bộ xong: ${summary.synced} bản ghi'
+            '${summary.conflicts > 0 ? ', ${summary.conflicts} xung đột' : ''}.',
           ),
         ),
       );
@@ -1063,7 +1068,7 @@ class _OfflineAttendancePageState extends ConsumerState<OfflineAttendancePage> {
       _setError(
         _friendlyError(
           error,
-          fallback: 'Chưa sync được. Bản ghi vẫn lưu trên máy.',
+          fallback: 'Chưa đồng bộ được. Bản ghi vẫn lưu trên máy.',
         ),
       );
     } finally {
@@ -1118,11 +1123,26 @@ class _OfflineAttendancePageState extends ConsumerState<OfflineAttendancePage> {
   }
 
   List<AttendanceSessionSummary> get _sessionsForSelectedCheckpoint {
+    final planItemId = (_selectedPlanItemId ?? '').trim();
     final checkpointId = _selectedCheckpointId;
-    if (checkpointId == null || checkpointId.isEmpty) return const [];
-    return _sessions
-        .where((session) => session.checkpointId == checkpointId)
-        .toList();
+    return _sessions.where((session) {
+      final sessionPlanItemId = (session.planItemId ?? '').trim();
+      if (planItemId.isNotEmpty) {
+        if (sessionPlanItemId.isNotEmpty) {
+          return sessionPlanItemId == planItemId;
+        }
+        if (checkpointId == null || session.checkpointId != checkpointId) {
+          return false;
+        }
+        final itemsAtCheckpoint = _checkpoints
+            .where((item) => item.checkpointId == checkpointId)
+            .length;
+        return itemsAtCheckpoint <= 1;
+      }
+      return checkpointId != null &&
+          checkpointId.isNotEmpty &&
+          session.checkpointId == checkpointId;
+    }).toList();
   }
 
   int get _pendingCount =>
@@ -1869,7 +1889,7 @@ class _ConnectionModeBanner extends StatelessWidget {
         ? pendingCount > 0
               ? 'Đang online. Có $pendingCount bản ghi offline chờ đồng bộ.'
               : 'Đang online. Điểm danh thủ công cập nhật trực tiếp lên server.'
-        : 'Thiết bị đang offline. Khuôn mặt offline dùng ONNX trên máy, dữ liệu sẽ đồng bộ khi có mạng.';
+        : 'Thiết bị đang offline. Nhận diện khuôn mặt ngay trên máy, dữ liệu sẽ đồng bộ khi có mạng.';
 
     return Container(
       padding: const EdgeInsets.all(12),
@@ -1940,7 +1960,7 @@ class _OfflineFaceModeView extends StatelessWidget {
                 child: Text(
                   activeSession == null
                       ? 'Chọn tour đã tải roster và mẫu khuôn mặt trước đó, rồi mở phiên để quét offline.'
-                      : 'ONNX chạy trên máy. Đã cache $templateCount mẫu khuôn mặt.',
+                      : 'Nhận diện ngay trên máy. Đã lưu $templateCount mẫu khuôn mặt.',
                 ),
               ),
             ],
@@ -1954,7 +1974,7 @@ class _OfflineFaceModeView extends StatelessWidget {
             enabled: enabled,
             title: 'Khuôn mặt offline',
             subtitle:
-                'Camera sẽ tự chụp khi có một khuôn mặt ổn định, tạo embedding bằng ONNX và so khớp cục bộ.',
+                'Camera sẽ tự chụp khi có khuôn mặt ổn định, rồi so khớp trên máy.',
             onCaptured: onCaptured,
           ),
         if (processing) ...[

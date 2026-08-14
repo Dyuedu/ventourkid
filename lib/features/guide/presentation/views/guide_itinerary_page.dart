@@ -549,6 +549,24 @@ class _GuideItineraryPageState extends ConsumerState<GuideItineraryPage> {
     return children;
   }
 
+  void _openAttendanceHistory(GuideTourItineraryItem item) {
+    final extra = <String, String>{
+      'tourId': widget.tourId,
+      'planItemId': item.planItemId,
+      if (item.title.trim().isNotEmpty) 'activityName': item.title.trim(),
+      if ((item.destinationName ?? '').trim().isNotEmpty)
+        'destinationName': item.destinationName!.trim(),
+      if ((item.checkpointId ?? '').trim().isNotEmpty)
+        'checkpointId': item.checkpointId!.trim(),
+      if ((item.legType ?? '').trim().isNotEmpty) 'legType': item.legType!.trim(),
+    };
+    final uri = Uri(
+      path: '/attendance/history',
+      queryParameters: extra,
+    );
+    context.push(uri.toString(), extra: extra);
+  }
+
   @override
   Widget build(BuildContext context) {
     final itinerary = _itinerary;
@@ -575,7 +593,9 @@ class _GuideItineraryPageState extends ConsumerState<GuideItineraryPage> {
       ),
       body: _GuideRoleScope(
         isTeacher: _isTeacher,
-        child: Column(
+        child: _ItineraryActionsScope(
+          onOpenAttendanceHistory: _openAttendanceHistory,
+          child: Column(
         children: [
           if (_feedback != null)
             _TopFeedbackBanner(feedback: _feedback!, onDismiss: _clearFeedback),
@@ -650,7 +670,7 @@ class _GuideItineraryPageState extends ConsumerState<GuideItineraryPage> {
                         Text(
                           _operationsLocked
                               ? 'Xem địa điểm, hoạt động và mốc điểm danh/livestream — thao tác vận hành khóa đến ngày đi.'
-                              : 'Hiển thị địa điểm, hoạt động và các mốc điểm danh/livestream của xe bạn — giống lịch trình trên web.',
+                              : 'Hiển thị địa điểm, hoạt động và các mốc điểm danh/livestream của xe bạn. Chỉ điểm đã đến và đã điểm danh mới có nút Lịch sử.',
                           style: Theme.of(context).textTheme.bodySmall
                               ?.copyWith(
                                 color: AppTheme.onSurfaceVariant,
@@ -718,6 +738,7 @@ class _GuideItineraryPageState extends ConsumerState<GuideItineraryPage> {
         ],
       ),
       ),
+      ),
     );
   }
 }
@@ -740,6 +761,26 @@ class _GuideRoleScope extends InheritedWidget {
   @override
   bool updateShouldNotify(_GuideRoleScope oldWidget) {
     return isTeacher != oldWidget.isTeacher;
+  }
+}
+
+class _ItineraryActionsScope extends InheritedWidget {
+  const _ItineraryActionsScope({
+    required this.onOpenAttendanceHistory,
+    required super.child,
+  });
+
+  final ValueChanged<GuideTourItineraryItem> onOpenAttendanceHistory;
+
+  static ValueChanged<GuideTourItineraryItem>? of(BuildContext context) {
+    return context
+        .dependOnInheritedWidgetOfExactType<_ItineraryActionsScope>()
+        ?.onOpenAttendanceHistory;
+  }
+
+  @override
+  bool updateShouldNotify(_ItineraryActionsScope oldWidget) {
+    return onOpenAttendanceHistory != oldWidget.onOpenAttendanceHistory;
   }
 }
 
@@ -1729,6 +1770,7 @@ class _NestedItemsColumn extends StatelessWidget {
     for (var i = 0; i < items.length; i++) {
       if (i > 0) tiles.add(const SizedBox(height: 8));
       final lockReason = _checkpointLockReason(items[i]);
+      final reached = itinerary.hasReachedCheckpoint(_anchorCheckpointId(items[i]));
       tiles.add(
         _NestedPlanItemTile(
           item: items[i],
@@ -1738,6 +1780,7 @@ class _NestedItemsColumn extends StatelessWidget {
           actionsLocked: lockReason != null,
           lockReason: lockReason,
           prepOpsLocked: prepOpsLocked,
+          checkpointReached: reached,
           onStart: openingPlanItemId != null
               ? null
               : () => onStartItem(items[i]),
@@ -1758,6 +1801,7 @@ class _NestedPlanItemTile extends StatelessWidget {
     this.actionsLocked = false,
     this.lockReason,
     this.prepOpsLocked = false,
+    this.checkpointReached = false,
   });
 
   final GuideTourItineraryItem item;
@@ -1770,6 +1814,7 @@ class _NestedPlanItemTile extends StatelessWidget {
   /// `completed` | `not_current` when [actionsLocked] is true.
   final String? lockReason;
   final bool prepOpsLocked;
+  final bool checkpointReached;
 
   @override
   Widget build(BuildContext context) {
@@ -2111,6 +2156,27 @@ class _NestedPlanItemTile extends StatelessWidget {
                         style: const TextStyle(fontSize: 13),
                       ),
                     ),
+            ),
+          ],
+          if (item.hasAttendanceHistory && checkpointReached) ...[
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () =>
+                    _ItineraryActionsScope.of(context)?.call(item),
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(44),
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  foregroundColor: AppTheme.primary,
+                  side: const BorderSide(color: AppTheme.primary),
+                ),
+                icon: const Icon(Icons.history_rounded, size: 18),
+                label: const Text(
+                  'Lịch sử',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+                ),
+              ),
             ),
           ],
         ],

@@ -53,6 +53,32 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<void> sendPasswordResetOtp({required String email}) {
+    return _guard(
+      () => _remoteDataSource.sendPasswordResetOtp(email: email),
+      fallbackMessage: 'KhĂ´ng thá»ƒ gá»­i mĂ£ khĂ´i phá»¥c. Vui lĂ²ng thá»­ láº¡i.',
+    );
+  }
+
+  @override
+  Future<void> resetPassword({
+    required String email,
+    required String otpCode,
+    required String newPassword,
+    required String confirmPassword,
+  }) {
+    return _guard(
+      () => _remoteDataSource.resetPassword(
+        email: email,
+        otpCode: otpCode,
+        newPassword: newPassword,
+        confirmPassword: confirmPassword,
+      ),
+      fallbackMessage: 'KhĂ´ng thá»ƒ Ä‘áº·t láº¡i máº­t kháº©u. Vui lĂ²ng thá»­ láº¡i.',
+    );
+  }
+
+  @override
   Future<void> register(RegisterDraft draft, String otpCode) {
     return _guard(
       () => _remoteDataSource.register(draft, otpCode),

@@ -4,6 +4,15 @@ import '../../data/models/accept_invitation_model.dart';
 abstract interface class AuthRepository {
   Future<void> sendRegisterOtp({required String identifier});
 
+  Future<void> sendPasswordResetOtp({required String email});
+
+  Future<void> resetPassword({
+    required String email,
+    required String otpCode,
+    required String newPassword,
+    required String confirmPassword,
+  });
+
   Future<void> register(RegisterDraft draft, String otpCode);
 
   Future<void> login({required String identifier, required String password});

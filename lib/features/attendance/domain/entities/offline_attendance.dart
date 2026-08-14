@@ -444,6 +444,46 @@ class AttendanceStudent {
   }
 }
 
+/// Sensitive field-only data. This is deliberately fetched on demand and is
+/// never placed in the offline attendance cache.
+class FieldFoodAllergyAlert {
+  const FieldFoodAllergyAlert({
+    required this.rosterStudentId,
+    required this.fullName,
+    required this.operationVehicleId,
+    required this.vehicleLabel,
+    required this.severity,
+    required this.foodAllergies,
+    this.className,
+    this.dietaryRestrictions,
+    this.emergencyNote,
+  });
+
+  final String rosterStudentId;
+  final String fullName;
+  final String operationVehicleId;
+  final String vehicleLabel;
+  final String severity;
+  final String foodAllergies;
+  final String? className;
+  final String? dietaryRestrictions;
+  final String? emergencyNote;
+
+  factory FieldFoodAllergyAlert.fromJson(Map<String, dynamic> json) {
+    return FieldFoodAllergyAlert(
+      rosterStudentId: json['rosterStudentId']?.toString() ?? '',
+      fullName: json['fullName']?.toString() ?? 'Học sinh',
+      operationVehicleId: json['operationVehicleId']?.toString() ?? '',
+      vehicleLabel: json['vehicleLabel']?.toString() ?? 'Xe được phân công',
+      severity: json['severity']?.toString().toUpperCase() ?? 'MEDIUM',
+      foodAllergies: json['foodAllergies']?.toString() ?? '',
+      className: json['className']?.toString(),
+      dietaryRestrictions: json['dietaryRestrictions']?.toString(),
+      emergencyNote: json['emergencyNote']?.toString(),
+    );
+  }
+}
+
 class AttendanceSessionDraft {
   const AttendanceSessionDraft({
     required this.sessionId,
@@ -510,6 +550,7 @@ class AttendanceSessionSummary {
     required this.checkpointId,
     required this.status,
     required this.summary,
+    this.planItemId,
     this.sessionName,
     this.sessionType,
     this.startedAt,
@@ -518,6 +559,7 @@ class AttendanceSessionSummary {
 
   final String sessionId;
   final String checkpointId;
+  final String? planItemId;
   final String status;
   final Map<String, int> summary;
   final String? sessionName;
@@ -530,6 +572,9 @@ class AttendanceSessionSummary {
     return AttendanceSessionSummary(
       sessionId: json['sessionId']?.toString() ?? '',
       checkpointId: json['checkpointId']?.toString() ?? '',
+      planItemId: json['planItemId']?.toString().trim().isNotEmpty == true
+          ? json['planItemId'].toString().trim()
+          : null,
       status: json['status']?.toString() ?? 'OPEN',
       sessionName: json['sessionName']?.toString(),
       sessionType: json['sessionType']?.toString(),
@@ -1028,6 +1073,16 @@ class GuideTourItineraryItem {
 
   bool get isAttendance => itemKind.toUpperCase() == 'ATTENDANCE';
 
+  bool get hasAttendanceHistory {
+    if (!isAttendance) return false;
+    final status = executionStatus.toUpperCase();
+    return completed ||
+        status == 'COMPLETED' ||
+        status == 'IN_PROGRESS' ||
+        status == 'PARTIAL' ||
+        status == 'FAILED';
+  }
+
   bool get isLivestream => itemKind.toUpperCase() == 'LIVESTREAM';
 
   /// Kiểm soát sĩ số khi xuống xe (đến điểm) — đứng trước hoạt động / livestream.
@@ -1135,6 +1190,15 @@ class GuideTourItinerary {
     final checkpoint = checkpointById(id);
     return checkpoint != null &&
         (checkpoint.isCurrent || checkpoint.isArrived);
+  }
+
+  /// True when the vehicle has arrived, is at, or has finished this stop.
+  bool hasReachedCheckpoint(String? id) {
+    if (id == null || id.trim().isEmpty) return false;
+    if (isCheckpointOperable(id) || isCheckpointCompleted(id)) return true;
+    final checkpoint = checkpointById(id);
+    return checkpoint != null &&
+        (checkpoint.isArrived || checkpoint.isCurrent || checkpoint.isCompleted);
   }
 
   /// Attendance / livestream / mutate actions are locked unless stop is current.

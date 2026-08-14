@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:livekit_client/livekit_client.dart';
@@ -12,10 +13,12 @@ import '../features/auth/presentation/views/register_parent_page.dart';
 import '../features/auth/presentation/views/set_password_from_invite_page.dart';
 import '../features/auth/presentation/views/verify_otp_page.dart';
 import '../features/attendance/presentation/views/offline_attendance_page.dart';
+import '../features/attendance/presentation/views/attendance_history_page.dart';
 import '../features/consent/presentation/public_consent_page.dart';
 import '../features/face_attendance/presentation/views/face_attendance_page.dart';
 import '../features/face_attendance/presentation/views/parent_face_enroll_page.dart';
 import '../features/guide/presentation/views/guide_dashboard_page.dart';
+import '../features/guide/presentation/views/food_allergy_alerts_page.dart';
 import '../features/guide/presentation/views/guide_itinerary_page.dart';
 import '../features/tour_closing/presentation/views/tour_closing_page.dart';
 import '../features/vehicle_inspection/presentation/views/vehicle_inspection_confirm_page.dart';
@@ -92,7 +95,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         }
       }
       if (isAuthenticated &&
-          (path == '/face-attendance' || path == '/attendance/offline')) {
+          (path == '/face-attendance' ||
+              path == '/attendance/offline' ||
+              path == '/attendance/history' ||
+              path == '/field/food-allergy-alerts')) {
         final role = await routeGuards.userRole;
         if (role != 'TOUR_GUIDE' && role != 'TEACHER') {
           return homePathForMobileRole(role);
@@ -244,6 +250,16 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           final tourId = q['tourId'] ?? '';
           final prep = _isTruthyQuery(q['prep']) || _isTruthyQuery(q['readOnly']);
           return GuideItineraryPage(tourId: tourId, prepReadOnlyHint: prep);
+        },
+      ),
+      GoRoute(
+        path: '/field/food-allergy-alerts',
+        builder: (context, state) {
+          final params = state.uri.queryParameters;
+          return FoodAllergyAlertsPage(
+            tourId: params['tourId'] ?? '',
+            tourName: params['tourName'],
+          );
         },
       ),
       GoRoute(
@@ -484,6 +500,34 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             initialSessionName: params['sessionName'],
             autoStartSession: params['autoStart'] == 'true',
             fromItinerary: params['fromItinerary'] == 'true',
+          );
+        },
+      ),
+      GoRoute(
+        path: '/attendance/history',
+        builder: (context, state) {
+          final params = state.uri.queryParameters;
+          final extra = state.extra is Map
+              ? Map<String, dynamic>.from(state.extra as Map)
+              : const <String, dynamic>{};
+          String? pick(String key) {
+            final fromExtra = extra[key]?.toString().trim();
+            if (fromExtra != null && fromExtra.isNotEmpty) return fromExtra;
+            final fromQuery = params[key]?.trim();
+            if (fromQuery != null && fromQuery.isNotEmpty) return fromQuery;
+            return null;
+          }
+
+          final tourId = pick('tourId') ?? params['tourId'] ?? '';
+          final planItemId = pick('planItemId');
+          return AttendanceHistoryPage(
+            key: ValueKey('$tourId-$planItemId'),
+            tourId: tourId,
+            tourName: pick('tourName') ?? params['tourName'],
+            initialPlanItemId: planItemId,
+            initialActivityName: pick('activityName'),
+            initialDestinationName: pick('destinationName'),
+            initialCheckpointId: pick('checkpointId'),
           );
         },
       ),

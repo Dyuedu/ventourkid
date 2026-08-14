@@ -3,6 +3,8 @@ enum AuthOperation {
   login,
   googleLogin,
   sendRegisterOtp,
+  sendPasswordResetOtp,
+  resetPassword,
   register,
   logout,
 }
@@ -17,6 +19,9 @@ class AuthViewState {
   bool get isLoggingIn => operation == AuthOperation.login;
   bool get isGoogleLoggingIn => operation == AuthOperation.googleLogin;
   bool get isSendingRegisterOtp => operation == AuthOperation.sendRegisterOtp;
+  bool get isSendingPasswordResetOtp =>
+      operation == AuthOperation.sendPasswordResetOtp;
+  bool get isResettingPassword => operation == AuthOperation.resetPassword;
   bool get isRegistering => operation == AuthOperation.register;
   bool get isLoggingOut => operation == AuthOperation.logout;
 }

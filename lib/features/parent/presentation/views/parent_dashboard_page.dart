@@ -122,7 +122,7 @@ class _ParentDashboardPageState extends ConsumerState<ParentDashboardPage> {
   void _openMediaTimeline(BuildContext context, ParentDashboardData data) {
     final uri = _mediaTimelineUri(data);
     if (uri == null) {
-      _showMessage(context, 'Chưa có tour đang hoạt động để mở media.');
+      _showMessage(context, 'Chưa có tour đang hoạt động để mở ảnh/video.');
       return;
     }
     context.push(uri.toString());
@@ -163,7 +163,7 @@ class _ParentDashboardPageState extends ConsumerState<ParentDashboardPage> {
     final tourId = _resolveTourId(data);
     final actorLabel = await _mobileActorLabel(ref);
     if (!context.mounted) return;
-    final queryParameters = <String, String>{'title': 'Newsfeed $actorLabel'};
+    final queryParameters = <String, String>{'title': 'Bảng tin $actorLabel'};
     queryParameters['actor'] = actorLabel;
     if (tourId != null) {
       queryParameters['tourId'] = tourId;
@@ -514,7 +514,7 @@ class _ParentDashboardPageState extends ConsumerState<ParentDashboardPage> {
                     _openMediaTimeline(context, data);
                   },
                   icon: const Icon(Iconsax.gallery),
-                  label: const Text('Xem media của con'),
+                  label: const Text('Xem ảnh/video của con'),
                 ),
                 const SizedBox(height: 12),
                 _InfoCard(
@@ -576,7 +576,7 @@ class _ParentDashboardPageState extends ConsumerState<ParentDashboardPage> {
   ) {
     return _showPanel(
       context,
-      title: 'Trạng thái uy quyen',
+      title: 'Trạng thái ủy quyền',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -726,7 +726,7 @@ class _ParentDashboardPageState extends ConsumerState<ParentDashboardPage> {
                 ),
                 const SizedBox(height: 12),
                 _InfoCard(
-                  title: 'Media',
+                  title: 'Ảnh & video',
                   children: [
                     _InfoRow(
                       label: 'Media chuyến đi',
@@ -767,7 +767,7 @@ class _ParentDashboardPageState extends ConsumerState<ParentDashboardPage> {
               _openIncidentReport(context, ref, data);
             },
             icon: const Icon(Iconsax.warning_2),
-            label: const Text('Bao cao su co'),
+            label: const Text('Báo cáo sự cố'),
           ),
           const SizedBox(height: 12),
           if (data.incidents.isEmpty)
@@ -794,7 +794,7 @@ class _ParentDashboardPageState extends ConsumerState<ParentDashboardPage> {
     final mediaAllowed = _allowsMobileParentMediaUpload(data);
     return _showPanel(
       context,
-      title: 'Gửi media tour',
+      title: 'Gửi ảnh/video tour',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -1970,7 +1970,7 @@ class _ChildProfileSummary extends StatelessWidget {
                         child: OutlinedButton.icon(
                           onPressed: onViewMedia,
                           icon: const Icon(Iconsax.gallery),
-                          label: const Text('Xem media của con'),
+                          label: const Text('Xem ảnh/video của con'),
                         ),
                       ),
                     ],
@@ -2303,7 +2303,7 @@ class _HistoryTile extends StatelessWidget {
         _InfoRow(label: 'Lưu trữ', value: history.retentionLabel),
         _InfoRow(label: 'Điểm danh', value: history.attendanceSummary),
         _InfoRow(label: 'Sự cố', value: history.incidentSummary),
-        _InfoRow(label: 'Media', value: history.mediaSummary),
+        _InfoRow(label: 'Ảnh & video', value: history.mediaSummary),
         if (onOpen != null) ...[
           const SizedBox(height: 8),
           OutlinedButton.icon(
@@ -2727,7 +2727,7 @@ class _ParentDrawer extends StatelessWidget {
                   ),
                   _DrawerNavTile(
                     icon: Iconsax.activity,
-                    label: 'Newsfeed',
+                    label: 'Bảng tin',
                     onTap: () => onOpen(ParentQuickActionKind.newsfeed),
                   ),
                   _DrawerNavTile(

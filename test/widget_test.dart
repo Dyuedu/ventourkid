@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:ventourkid_mobile/app/app.dart';
 import 'package:ventourkid_mobile/app/providers.dart';
 import 'package:ventourkid_mobile/core/storage/token_storage.dart';
 import 'package:ventourkid_mobile/features/auth/data/models/accept_invitation_model.dart';
@@ -77,6 +76,17 @@ class FakeAuthRepository implements AuthRepository {
 
   @override
   Future<void> sendRegisterOtp({required String identifier}) async {}
+
+  @override
+  Future<void> sendPasswordResetOtp({required String email}) async {}
+
+  @override
+  Future<void> resetPassword({
+    required String email,
+    required String otpCode,
+    required String newPassword,
+    required String confirmPassword,
+  }) async {}
 
   @override
   Future<String?> getUserRole() async => 'PARENT';

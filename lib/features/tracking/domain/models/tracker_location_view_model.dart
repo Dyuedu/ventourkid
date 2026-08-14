@@ -338,6 +338,20 @@ class TrackingEtaViewModel {
   final bool delayed;
   final String? providerStatus;
 
+  bool get hasRouteEstimate =>
+      distanceMeters != null && durationSeconds != null && estimatedArrivalAt != null;
+
+  String? get availabilityLabel {
+    switch (providerStatus?.toUpperCase()) {
+      case 'STALE':
+        return 'Đang dùng ETA gần nhất';
+      case 'UNAVAILABLE':
+        return 'Chưa thể tính thời gian đến';
+      default:
+        return null;
+    }
+  }
+
   factory TrackingEtaViewModel.fromJson(Map<String, dynamic> json) {
     return TrackingEtaViewModel(
       assignmentId: json['assignmentId']?.toString() ?? '',

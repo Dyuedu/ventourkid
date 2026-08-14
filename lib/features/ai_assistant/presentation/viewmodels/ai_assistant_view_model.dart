@@ -44,10 +44,9 @@ class AiAssistantViewModel extends StateNotifier<AiAssistantViewState> {
         conversationId: conversation.id,
         isBootstrapping: false,
       );
-    } on Object catch (error) {
+    } on Object catch (_) {
       state = state.copyWith(
         isBootstrapping: false,
-        errorMessage: _mapError(error, 'Không thể tải hội thoại AI. Vui lòng thử lại.'),
       );
     }
   }

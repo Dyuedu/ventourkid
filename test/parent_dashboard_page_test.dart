@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:ventourkid_mobile/app/providers.dart';
 import 'package:ventourkid_mobile/features/parent/data/datasources/parent_dashboard_local_data_source.dart';
 import 'package:ventourkid_mobile/features/parent/domain/entities/parent_dashboard.dart';
@@ -23,6 +24,16 @@ void main() {
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
+    final router = GoRouter(
+      initialLocation: '/parent/dashboard',
+      routes: [
+        GoRoute(
+          path: '/parent/dashboard',
+          builder: (context, state) => const ParentDashboardPage(),
+        ),
+      ],
+    );
+    addTearDown(router.dispose);
 
     await tester.pumpWidget(
       ProviderScope(
@@ -31,9 +42,9 @@ void main() {
             _LocalOnlyParentDashboardRepository(),
           ),
         ],
-        child: MaterialApp(
+        child: MaterialApp.router(
           theme: AppTheme.light,
-          home: const ParentDashboardPage(),
+          routerConfig: router,
         ),
       ),
     );
@@ -47,5 +58,28 @@ void main() {
     expect(find.text('Livestream'), findsNothing);
 
     expect(find.text('Thêm thao tác'), findsOneWidget);
+
+    await tester.scrollUntilVisible(
+      find.text('Chưa có học sinh nào'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('Chưa có học sinh nào'), findsOneWidget);
+
+    final moreActions = find.text('Thêm thao tác');
+    await tester.ensureVisible(moreActions);
+    await tester.tap(moreActions);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    final authorizations = find.text('Ủy quyền');
+    expect(authorizations, findsOneWidget);
+    await tester.tap(authorizations);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.text('Trạng thái ủy quyền'), findsOneWidget);
+    expect(find.text('Chưa có dữ liệu ủy quyền'), findsOneWidget);
+    expect(find.textContaining('Bạn có thể xác nhận điều khoản'), findsOneWidget);
   });
 }

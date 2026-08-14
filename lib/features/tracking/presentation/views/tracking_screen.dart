@@ -37,6 +37,7 @@ class _TrackingScreenState extends ConsumerState<TrackingScreen> {
   bool _isGuide = false;
   bool _isParent = false;
   bool _canReplaceTracker = false;
+  List<Map<String, dynamic>> _backupDevices = const [];
   String? _error;
   String _connection = 'CONNECTING';
   String? _lastEventId;
@@ -50,10 +51,20 @@ class _TrackingScreenState extends ConsumerState<TrackingScreen> {
   void initState() {
     super.initState();
     unawaited(_loadRole());
+    unawaited(_loadBackupDevices());
     unawaited(_loadSnapshot().then((_) => _connectRealtime()));
     _pollingTimer = Timer.periodic(const Duration(seconds: 15), (_) {
       if (_connection != 'LIVE') unawaited(_loadSnapshot(background: true));
     });
+  }
+
+  Future<void> _loadBackupDevices() async {
+    try {
+      final devices = await _remote.getMyBackupDevices(widget.operationPlanId);
+      if (mounted) setState(() => _backupDevices = devices);
+    } on Object {
+      // The replacement flow remains usable; the server is the authority for custody validation.
+    }
   }
 
   @override
@@ -111,6 +122,7 @@ class _TrackingScreenState extends ConsumerState<TrackingScreen> {
         const SnackBar(content: Text('Đã thay thiết bị GPS.')),
       );
       await _loadSnapshot(background: true);
+      await _loadBackupDevices();
     }
   }
 
@@ -324,9 +336,9 @@ class _TrackingScreenState extends ConsumerState<TrackingScreen> {
               ),
               label: Text(
                 _connection == 'LIVE'
-                    ? 'Realtime'
+                    ? 'Trực tiếp'
                     : _connection == 'POLLING'
-                    ? 'Polling'
+                    ? 'Định kỳ'
                     : 'Đang nối',
                 style: const TextStyle(
                   color: AppTheme.primary,
@@ -472,6 +484,19 @@ class _TrackingScreenState extends ConsumerState<TrackingScreen> {
                     ),
                   ],
                   const Divider(height: 28),
+                  if (_isGuide) ...[
+                    Text('GPS dự phòng tôi đang giữ', style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
+                    if (_backupDevices.isEmpty)
+                      const Padding(padding: EdgeInsets.symmetric(vertical: 8), child: Text('Chưa có GPS dự phòng được bàn giao.'))
+                    else
+                      ..._backupDevices.map((device) => ListTile(
+                        dense: true,
+                        leading: const Icon(Iconsax.gps),
+                        title: Text(device['deviceCode']?.toString() ?? '-'),
+                        subtitle: const Text('Đã bàn giao cho bạn'),
+                      )),
+                    const Divider(height: 28),
+                  ],
                   Text(
                     'Lịch trình',
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
@@ -652,8 +677,12 @@ class _EtaCard extends StatelessWidget {
         child: Row(
           children: [
             Icon(
-              eta.delayed ? Icons.schedule : Icons.navigation_outlined,
-              color: eta.delayed ? AppTheme.accentOrange : AppTheme.primary,
+              eta.delayed || !eta.hasRouteEstimate
+                  ? Icons.schedule
+                  : Icons.navigation_outlined,
+              color: eta.delayed || !eta.hasRouteEstimate
+                  ? AppTheme.accentOrange
+                  : AppTheme.primary,
             ),
             const SizedBox(width: 10),
             Expanded(
@@ -669,12 +698,17 @@ class _EtaCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    [
-                      if (vehicleLabel != null) vehicleLabel!,
-                      eta.distanceLabel,
-                      eta.durationLabel,
-                      if (eta.delayed) 'Trễ',
-                    ].join(' · '),
+                    eta.hasRouteEstimate
+                        ? [
+                            if (vehicleLabel != null) vehicleLabel!,
+                            eta.distanceLabel,
+                            eta.durationLabel,
+                            if (eta.delayed) 'Trễ',
+                            if (eta.availabilityLabel != null)
+                              eta.availabilityLabel!,
+                          ].join(' · ')
+                        : eta.availabilityLabel ??
+                            'Đang chờ tính thời gian đến',
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                 ],

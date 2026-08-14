@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/network/dio_client.dart';
 import '../../../face_attendance/domain/entities/mobile_face_embedding.dart';
 import '../../domain/entities/offline_attendance.dart';
+import '../../domain/entities/tour_attendance_history.dart';
 
 abstract interface class AttendanceRemoteDataSource {
   Future<List<AttendanceTour>> listActiveTours();
@@ -52,6 +53,8 @@ abstract interface class AttendanceRemoteDataSource {
     String? operationVehicleId,
   });
 
+  Future<List<FieldFoodAllergyAlert>> listFoodAllergyAlerts(String tourId);
+
   Future<AttendanceSessionDraft> startSession({
     required String planItemId,
     required String tourId,
@@ -67,6 +70,12 @@ abstract interface class AttendanceRemoteDataSource {
   Future<List<OfflineFaceTemplate>> listFaceTemplates(String tourId);
 
   Future<AttendanceSessionResults> getSessionResults(String sessionId);
+
+  Future<TourAttendanceHistory> getTourAttendanceHistory(
+    String tourId, {
+    String? planItemId,
+    String? checkpointId,
+  });
 
   Future<AttendanceRecordItem> overrideRecord({
     required String sessionId,
@@ -256,6 +265,16 @@ class AttendanceRemoteDataSourceImpl implements AttendanceRemoteDataSource {
   }
 
   @override
+  Future<List<FieldFoodAllergyAlert>> listFoodAllergyAlerts(String tourId) async {
+    final response = await _dio.dio.get<Map<String, dynamic>>(
+      '/v1/attendance/active-tours/$tourId/food-allergy-alerts',
+    );
+    return _dataList(response.data)
+        .map(FieldFoodAllergyAlert.fromJson)
+        .toList();
+  }
+
+  @override
   Future<AttendanceSessionDraft> startSession({
     required String planItemId,
     required String tourId,
@@ -319,6 +338,28 @@ class AttendanceRemoteDataSourceImpl implements AttendanceRemoteDataSource {
       throw const FormatException('Invalid attendance session results');
     }
     return AttendanceSessionResults.fromJson(data);
+  }
+
+  @override
+  Future<TourAttendanceHistory> getTourAttendanceHistory(
+    String tourId, {
+    String? planItemId,
+    String? checkpointId,
+  }) async {
+    final response = await _dio.dio.get<Map<String, dynamic>>(
+      '/v1/attendance/active-tours/$tourId/history',
+      queryParameters: {
+        if (planItemId != null && planItemId.trim().isNotEmpty)
+          'planItemId': planItemId.trim(),
+        if (checkpointId != null && checkpointId.trim().isNotEmpty)
+          'checkpointId': checkpointId.trim(),
+      },
+    );
+    final raw = response.data?['data'];
+    if (raw is! Map) {
+      throw const FormatException('Invalid tour attendance history response');
+    }
+    return TourAttendanceHistory.fromJson(Map<String, dynamic>.from(raw));
   }
 
   @override
@@ -868,6 +909,10 @@ class OfflineAttendanceRepository {
     return students;
   }
 
+  Future<List<FieldFoodAllergyAlert>> listFoodAllergyAlerts(String tourId) {
+    return _remote.listFoodAllergyAlerts(tourId);
+  }
+
   Future<AttendanceSessionDraft?> getActiveSession() {
     return _local.getActiveSession();
   }
@@ -926,6 +971,18 @@ class OfflineAttendanceRepository {
 
   Future<AttendanceSessionResults> getSessionResults(String sessionId) {
     return _remote.getSessionResults(sessionId);
+  }
+
+  Future<TourAttendanceHistory> getTourAttendanceHistory(
+    String tourId, {
+    String? planItemId,
+    String? checkpointId,
+  }) {
+    return _remote.getTourAttendanceHistory(
+      tourId,
+      planItemId: planItemId,
+      checkpointId: checkpointId,
+    );
   }
 
   Future<AttendanceSessionResults> closeSession(String sessionId) {

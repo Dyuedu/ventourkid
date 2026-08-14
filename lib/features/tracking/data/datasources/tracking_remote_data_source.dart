@@ -172,6 +172,15 @@ class TrackingRemoteDataSource {
     );
   }
 
+  Future<List<Map<String, dynamic>>> getMyBackupDevices(String operationPlanId) async {
+    final response = await _dioClient.dio.get(
+      '/v1/tracking/assignments/operations/$operationPlanId/my-backup-custody',
+    );
+    final data = _unwrap(response.data);
+    if (data is! List) return const [];
+    return data.whereType<Map>().map((item) => Map<String, dynamic>.from(item)).toList(growable: false);
+  }
+
   Future<void> syncOfflineCommands(List<Map<String, dynamic>> commands) async {
     await _dioClient.dio.post('/v1/offline/sync', data: {'commands': commands});
   }

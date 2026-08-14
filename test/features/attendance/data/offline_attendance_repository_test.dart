@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ventourkid_mobile/features/attendance/data/datasources/offline_attendance_data_source.dart';
 import 'package:ventourkid_mobile/features/attendance/domain/entities/offline_attendance.dart';
+import 'package:ventourkid_mobile/features/attendance/domain/entities/tour_attendance_history.dart';
 import 'package:ventourkid_mobile/features/face_attendance/domain/entities/mobile_face_embedding.dart';
 
 void main() {
@@ -181,6 +182,15 @@ class _FakeAttendanceRemoteDataSource implements AttendanceRemoteDataSource {
   }
 
   @override
+  Future<TourAttendanceHistory> getTourAttendanceHistory(
+    String tourId, {
+    String? planItemId,
+    String? checkpointId,
+  }) {
+    throw UnimplementedError();
+  }
+
+  @override
   Future<GuideTourItinerary> getTourItinerary(String tourId) {
     throw UnimplementedError();
   }
@@ -220,6 +230,11 @@ class _FakeAttendanceRemoteDataSource implements AttendanceRemoteDataSource {
     String tourId, {
     String? operationVehicleId,
   }) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<List<FieldFoodAllergyAlert>> listFoodAllergyAlerts(String tourId) {
     throw UnimplementedError();
   }
 

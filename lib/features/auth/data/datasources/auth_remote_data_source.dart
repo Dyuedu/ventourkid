@@ -9,6 +9,15 @@ import '../models/auth_tokens_model.dart';
 abstract interface class AuthRemoteDataSource {
   Future<void> sendRegisterOtp({required String identifier});
 
+  Future<void> sendPasswordResetOtp({required String email});
+
+  Future<void> resetPassword({
+    required String email,
+    required String otpCode,
+    required String newPassword,
+    required String confirmPassword,
+  });
+
   Future<void> register(RegisterDraft draft, String otpCode);
 
   Future<AuthTokensModel> login({
@@ -46,6 +55,34 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     await _dioClient.dio.post<void>(
       '/v1/auth/register/otp/send',
       data: {'identifier': identifier},
+      options: Options(extra: const {'skipAuthRefresh': true}),
+    );
+  }
+
+  @override
+  Future<void> sendPasswordResetOtp({required String email}) async {
+    await _dioClient.dio.post<void>(
+      '/v1/auth/password-reset/otp/send',
+      data: {'email': email},
+      options: Options(extra: const {'skipAuthRefresh': true}),
+    );
+  }
+
+  @override
+  Future<void> resetPassword({
+    required String email,
+    required String otpCode,
+    required String newPassword,
+    required String confirmPassword,
+  }) async {
+    await _dioClient.dio.post<void>(
+      '/v1/auth/password-reset',
+      data: {
+        'email': email,
+        'otpCode': otpCode,
+        'newPassword': newPassword,
+        'confirmPassword': confirmPassword,
+      },
       options: Options(extra: const {'skipAuthRefresh': true}),
     );
   }

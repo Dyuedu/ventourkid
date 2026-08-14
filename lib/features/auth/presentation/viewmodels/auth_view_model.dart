@@ -19,6 +19,32 @@ class AuthViewModel extends StateNotifier<AuthViewState> {
     );
   }
 
+  Future<bool> sendPasswordResetOtp({required String email}) {
+    return _execute(
+      AuthOperation.sendPasswordResetOtp,
+      () => _repository.sendPasswordResetOtp(email: email),
+      fallbackMessage: 'KhĂ´ng thá»ƒ gá»­i mĂ£ khĂ´i phá»¥c. Vui lĂ²ng thá»­ láº¡i.',
+    );
+  }
+
+  Future<bool> resetPassword({
+    required String email,
+    required String otpCode,
+    required String newPassword,
+    required String confirmPassword,
+  }) {
+    return _execute(
+      AuthOperation.resetPassword,
+      () => _repository.resetPassword(
+        email: email,
+        otpCode: otpCode,
+        newPassword: newPassword,
+        confirmPassword: confirmPassword,
+      ),
+      fallbackMessage: 'KhĂ´ng thá»ƒ Ä‘áº·t láº¡i máº­t kháº©u. Vui lĂ²ng thá»­ láº¡i.',
+    );
+  }
+
   Future<bool> register(RegisterDraft draft, String otpCode) {
     return _execute(
       AuthOperation.register,

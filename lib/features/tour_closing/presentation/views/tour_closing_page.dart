@@ -122,7 +122,7 @@ class _TourClosingPageState extends ConsumerState<TourClosingPage> {
         title: 'Đang hoàn tất tour…',
         message:
             'Checklist đã đủ điều kiện. Hệ thống đang tự khóa tour. '
-            'Nếu sau khi Refresh vẫn chưa thấy “Đã hoàn tất”, hãy liên hệ Operator trên Web.',
+            'Nếu sau khi làm mới vẫn chưa thấy “Đã hoàn tất”, hãy liên hệ điều hành trên web.',
       );
     }
   }
@@ -141,7 +141,7 @@ class _TourClosingPageState extends ConsumerState<TourClosingPage> {
         title: const Text('Tour đã hoàn tất', textAlign: TextAlign.center),
         content: const Text(
           'Checklist đóng tour đã khóa.\n'
-          'Báo cáo / Word do Operator trên Web (tab Đóng tour).',
+          'Báo cáo do điều hành tạo trên web (mục Đóng tour).',
           textAlign: TextAlign.center,
         ),
         actionsAlignment: MainAxisAlignment.center,
@@ -389,7 +389,7 @@ class _TourClosingPageState extends ConsumerState<TourClosingPage> {
                       color: Colors.green,
                       title: 'Tour đã hoàn tất',
                       body:
-                          'Checklist đóng tour đã khóa. Báo cáo / Word do Operator trên Web (tab Đóng tour).',
+                          'Checklist đóng tour đã khóa. Báo cáo do điều hành tạo trên web (mục Đóng tour).',
                       actionLabel: 'Về màn hình chính',
                       onAction: () => context.go('/guide/dashboard'),
                     ),
@@ -400,9 +400,9 @@ class _TourClosingPageState extends ConsumerState<TourClosingPage> {
                       title: 'Đang hoàn tất tour…',
                       body:
                           'Checklist đã xanh. Hệ thống đang tự Complete. '
-                          'Bấm Refresh nếu chưa thấy trạng thái Đã hoàn tất — '
-                          'nếu vẫn chưa, liên hệ Operator trên Web.',
-                      actionLabel: 'Refresh',
+                          'Bấm Làm mới nếu chưa thấy trạng thái Đã hoàn tất — '
+                          'nếu vẫn chưa, liên hệ điều hành trên web.',
+                      actionLabel: 'Làm mới',
                       onAction: _busy ? null : () => _load(fromAction: true),
                     ),
                     const SizedBox(height: 12),
@@ -413,7 +413,7 @@ class _TourClosingPageState extends ConsumerState<TourClosingPage> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Checklist: ${_checklist?['status'] ?? '—'} · Ready: ${_ready?['ready'] == true ? 'Có' : 'Chưa'}',
+                    'Checklist: ${_checklist?['status'] ?? '—'} · Sẵn sàng: ${_ready?['ready'] == true ? 'Có' : 'Chưa'}',
                     style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
                   const SizedBox(height: 12),
@@ -509,16 +509,16 @@ class _TourClosingPageState extends ConsumerState<TourClosingPage> {
                                       .read(tourClosingRemoteDataSourceProvider)
                                       .refreshIncidents(widget.tourId);
                                 },
-                                okSnackMsg: 'Đã refresh sự cố',
+                                okSnackMsg: 'Đã làm mới danh sách sự cố',
                               ),
-                      child: const Text('Refresh sự cố'),
+                      child: const Text('Làm mới sự cố'),
                     ),
                   ],
                   const SizedBox(height: 24),
                   Text(
                     readOnly
-                        ? 'Tour đã khóa. Báo cáo / Word do Operator trên Web (tab Đóng tour).'
-                        : 'Tour tự Complete khi checklist xanh hết. Báo cáo / Word do Operator trên Web (tab Đóng tour).',
+                        ? 'Tour đã khóa. Báo cáo do điều hành tạo trên web (mục Đóng tour).'
+                        : 'Tour tự hoàn tất khi checklist đã đủ. Báo cáo do điều hành tạo trên web (mục Đóng tour).',
                     style: const TextStyle(fontSize: 12, color: Colors.black54),
                   ),
                 ],

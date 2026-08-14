@@ -143,9 +143,9 @@ class _GuideDashboardPageState extends ConsumerState<GuideDashboardPage> {
   String get _dashboardTitle => _isTeacher ? 'Điều khiển GV' : 'Điều khiển HDV';
 
   String get _newsfeedTitle =>
-      _isTeacher ? 'Newsfeed giáo viên' : 'Newsfeed tour guide';
+      _isTeacher ? 'Bảng tin giáo viên' : 'Bảng tin hướng dẫn viên';
 
-  String get _newsfeedActor => _isTeacher ? 'Giáo viên' : 'Tour guide';
+  String get _newsfeedActor => _isTeacher ? 'Giáo viên' : 'Hướng dẫn viên';
 
   String get _tourSectionLabel => switch (_tab) {
     _TourListTab.active => _isTeacher ? 'Tour đang chạy' : 'Tour đang quản lý',
@@ -574,6 +574,27 @@ class _GuideDashboardPageState extends ConsumerState<GuideDashboardPage> {
         availableWhenCompleted: true,
       ),
       _ActionItem(
+        title: 'Dị ứng thực phẩm',
+        subtitle: upcoming
+            ? 'Kiểm tra lưu ý an toàn theo xe trước ngày đi'
+            : 'Danh sách học sinh dị ứng trên xe bạn phụ trách',
+        icon: Icons.restaurant_menu_rounded,
+        accent: const Color(0xFFB45309),
+        onTap: () {
+          final tour = _activeTour;
+          if (tour != null) {
+            context.push(Uri(
+              path: '/field/food-allergy-alerts',
+              queryParameters: {
+                'tourId': tour.tourId,
+                'tourName': tour.tourName,
+              },
+            ).toString());
+          }
+        },
+        availableWhenUpcoming: true,
+      ),
+      _ActionItem(
         title: 'Theo dõi',
         subtitle: completed
             ? 'Xem lại vị trí xe và học sinh GPS của tour'
@@ -632,7 +653,7 @@ class _GuideDashboardPageState extends ConsumerState<GuideDashboardPage> {
     final upcoming = _tab == _TourListTab.upcoming;
     final more = [
       _ActionItem(
-        title: 'Newsfeed',
+        title: 'Bảng tin',
         subtitle: 'Cập nhật hoạt động tour',
         icon: Icons.newspaper_outlined,
         accent: AppTheme.cta,
@@ -701,7 +722,7 @@ class _GuideDashboardPageState extends ConsumerState<GuideDashboardPage> {
                               ),
                         ),
                         Text(
-                          'Newsfeed, trợ lý AI, đóng tour',
+                          'Bảng tin, trợ lý AI, đóng tour',
                           style: Theme.of(context).textTheme.bodySmall
                               ?.copyWith(color: AppTheme.onSurfaceVariant),
                         ),

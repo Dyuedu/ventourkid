@@ -392,7 +392,7 @@ class _MediaTimelinePageState extends ConsumerState<MediaTimelinePage> {
     final files = _selectedFiles;
     if (files.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vui lòng chọn media trước khi tải lên.')),
+        const SnackBar(content: Text('Vui lòng chọn ảnh hoặc video trước khi tải lên.')),
       );
       return;
     }

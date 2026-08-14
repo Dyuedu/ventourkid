@@ -21,7 +21,7 @@ class ParentDashboardLocalDataSourceImpl
     quickActions: [
       ParentQuickAction(
         kind: ParentQuickActionKind.newsfeed,
-        label: 'Newsfeed',
+        label: 'Bảng tin',
       ),
       ParentQuickAction(
         kind: ParentQuickActionKind.linkChild,
@@ -50,7 +50,7 @@ class ParentDashboardLocalDataSourceImpl
       ),
       ParentQuickAction(
         kind: ParentQuickActionKind.mediaUpload,
-        label: 'Gửi media',
+        label: 'Gửi ảnh/video',
       ),
       ParentQuickAction(
         kind: ParentQuickActionKind.livestream,

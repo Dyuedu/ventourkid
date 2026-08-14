@@ -1,8 +1,7 @@
 class AppConfig {
   static const String apiBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue:
-        'https://fourth-collectible-sugar-amplifier.trycloudflare.com/api',
+    defaultValue: 'https://api.ventourkids.io.vn/api',
   );
 
   static const String appEnv = String.fromEnvironment(

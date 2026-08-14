@@ -365,7 +365,7 @@ class _NewsfeedPageState extends ConsumerState<NewsfeedPage> {
           context,
           fallbackRoute: '/parent/dashboard',
         ),
-        title: Text(widget.title ?? 'Newsfeed'),
+        title: Text(widget.title ?? 'Bảng tin'),
         backgroundColor: AppTheme.surface,
         elevation: 0,
       ),
@@ -755,12 +755,12 @@ class _NewsfeedTabs extends StatelessWidget {
           ButtonSegment(
             value: _NewsfeedFilter.media,
             icon: Icon(Icons.photo_library_outlined),
-            label: Text('Media'),
+            label: Text('Ảnh & video'),
           ),
           ButtonSegment(
             value: _NewsfeedFilter.blog,
             icon: Icon(Icons.article_outlined),
-            label: Text('Blog'),
+            label: Text('Bài viết'),
           ),
         ],
       ),
@@ -1601,7 +1601,7 @@ class _KindBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(999),
       ),
       child: Text(
-        isBlog ? 'Blog' : 'Media',
+        isBlog ? 'Bài viết' : 'Ảnh & video',
         style: Theme.of(context).textTheme.labelSmall?.copyWith(
           color: isBlog ? AppTheme.secondary : AppTheme.accentGreen,
           fontWeight: FontWeight.w800,

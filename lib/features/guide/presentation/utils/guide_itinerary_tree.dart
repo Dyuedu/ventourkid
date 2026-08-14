@@ -42,7 +42,6 @@ List<GuideTourItineraryItem> itemsForAnchor(
   String checkpointId,
   List<GuideTourItineraryItem> planItems,
 ) {
-  final seen = <String>{};
   final items = planItems
       .where((item) => item.checkpointId == checkpointId)
       .toList()
@@ -52,16 +51,32 @@ List<GuideTourItineraryItem> itemsForAnchor(
       return a.title.compareTo(b.title);
     });
 
-  return items.where((item) {
+  final seen = <String>{};
+  final picked = <GuideTourItineraryItem>[];
+  for (final item in items) {
     if (item.itemKind.toUpperCase() == 'ATTENDANCE' && item.required) {
-      // BOARDING và ALIGHTING là hai hoạt động khác nhau tại cùng checkpoint.
       final leg = (item.legType ?? 'BOARDING').trim().toUpperCase();
       final key = 'att:${item.checkpointId}:$leg';
-      if (seen.contains(key)) return false;
+      if (seen.contains(key)) continue;
       seen.add(key);
+      final sameLeg = items.where((other) {
+        if (other.itemKind.toUpperCase() != 'ATTENDANCE' || !other.required) {
+          return false;
+        }
+        final otherLeg = (other.legType ?? 'BOARDING').trim().toUpperCase();
+        return other.checkpointId == item.checkpointId && otherLeg == leg;
+      }).toList();
+      picked.add(
+        sameLeg.firstWhere(
+          (other) => other.hasAttendanceHistory,
+          orElse: () => item,
+        ),
+      );
+      continue;
     }
-    return true;
-  }).toList();
+    picked.add(item);
+  }
+  return picked;
 }
 
 List<GuideTourItineraryItem> livestreamForActivity(

@@ -62,6 +62,22 @@ class _MissingStudentSearchMapScreenState
     if (_vehicleLocation != null) _vehicleLocation!,
   ];
 
+  Set<MFCircle> get _personalTrailPointMarker {
+    final trail = _personalTrail;
+    if (trail.isEmpty) return const <MFCircle>{};
+    return {
+      MFCircle(
+        circleId: const MFCircleId('personal-trail-latest-point'),
+        center: trail.last,
+        radius: 24,
+        fillColor: AppTheme.primary.withValues(alpha: 0.30),
+        strokeColor: AppTheme.primary,
+        strokeWidth: 3,
+        zIndex: 20,
+      ),
+    };
+  }
+
   Set<MFMarker> get _markers {
     final markers = <MFMarker>{};
     final trail = _personalTrail;
@@ -108,6 +124,7 @@ class _MissingStudentSearchMapScreenState
   Widget build(BuildContext context) {
     final trail = _personalTrail;
     final allPoints = _allPoints;
+    final mapTarget = trail.isNotEmpty ? trail.last : allPoints.last;
     return Scaffold(
       backgroundColor: AppTheme.surfaceLight,
       appBar: AppBar(
@@ -123,6 +140,8 @@ class _MissingStudentSearchMapScreenState
             child: Text(
               trail.isEmpty
                   ? 'Học sinh chưa được gán GPS cá nhân: không có đường đi cá nhân để hiển thị. Các điểm trên bản đồ chỉ là dữ kiện hỗ trợ tìm kiếm.'
+                  : trail.length == 1
+                  ? 'Chỉ có 1 điểm GPS cá nhân trong khoảng dữ liệu; điểm màu xanh là vị trí gần nhất. Cần ít nhất 2 điểm để vẽ đường đi.'
                   : 'Đường màu xanh là dữ liệu GPS của thiết bị cá nhân, không khẳng định tuyệt đối vị trí học sinh.',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(height: 1.4),
             ),
@@ -134,11 +153,12 @@ class _MissingStudentSearchMapScreenState
                 ? _MapFallback(hasPersonalTrail: trail.isNotEmpty)
                 : MFMapView(
                     initialCameraPosition: MFCameraPosition(
-                      target: allPoints.last,
+                      target: mapTarget,
                       zoom: 15,
                     ),
                     buildingsEnabled: false,
                     markers: _markers,
+                    circles: _personalTrailPointMarker,
                     polylines: trail.length < 2
                         ? const <MFPolyline>{}
                         : {
@@ -155,7 +175,10 @@ class _MissingStudentSearchMapScreenState
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
             child: Row(
               children: [
-                _Legend(color: AppTheme.primary, label: 'Đường GPS cá nhân'),
+                _Legend(
+                  color: AppTheme.primary,
+                  label: trail.length < 2 ? 'Điểm GPS cá nhân' : 'Đường GPS cá nhân',
+                ),
                 const SizedBox(width: 16),
                 const _Legend(color: AppTheme.accentOrange, label: 'Điểm hỗ trợ'),
               ],
