@@ -150,6 +150,16 @@ class _FakeAttendanceRemoteDataSource implements AttendanceRemoteDataSource {
   }
 
   @override
+  Future<Map<String, dynamic>> confirmManualArrival({
+    required String tourId,
+    required String operationVehicleId,
+    required String checkpointId,
+    required String reason,
+  }) {
+    throw UnimplementedError();
+  }
+
+  @override
   Future<PreTripChecklist> getPreTripChecklist(String tourId) =>
       throw UnimplementedError();
 

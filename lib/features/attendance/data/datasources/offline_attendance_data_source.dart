@@ -46,6 +46,13 @@ abstract interface class AttendanceRemoteDataSource {
     required String checkpointId,
   });
 
+  Future<Map<String, dynamic>> confirmManualArrival({
+    required String tourId,
+    required String operationVehicleId,
+    required String checkpointId,
+    required String reason,
+  });
+
   Future<List<AttendanceSessionSummary>> listSessions(String tourId);
 
   Future<List<AttendanceStudent>> listStudents(
@@ -232,6 +239,23 @@ class AttendanceRemoteDataSourceImpl implements AttendanceRemoteDataSource {
   }) async {
     final response = await _dio.dio.post<Map<String, dynamic>>(
       '/v1/attendance/active-tours/$tourId/vehicles/$operationVehicleId/checkpoints/$checkpointId/complete',
+    );
+    final data = response.data?['data'];
+    if (data is Map<String, dynamic>) return data;
+    if (data is Map) return Map<String, dynamic>.from(data);
+    return const {};
+  }
+
+  @override
+  Future<Map<String, dynamic>> confirmManualArrival({
+    required String tourId,
+    required String operationVehicleId,
+    required String checkpointId,
+    required String reason,
+  }) async {
+    final response = await _dio.dio.post<Map<String, dynamic>>(
+      '/v1/attendance/active-tours/$tourId/vehicles/$operationVehicleId/checkpoints/$checkpointId/manual-arrival',
+      data: {'reason': reason},
     );
     final data = response.data?['data'];
     if (data is Map<String, dynamic>) return data;
@@ -890,6 +914,20 @@ class OfflineAttendanceRepository {
       tourId: tourId,
       operationVehicleId: operationVehicleId,
       checkpointId: checkpointId,
+    );
+  }
+
+  Future<Map<String, dynamic>> confirmManualArrival({
+    required String tourId,
+    required String operationVehicleId,
+    required String checkpointId,
+    required String reason,
+  }) {
+    return _remote.confirmManualArrival(
+      tourId: tourId,
+      operationVehicleId: operationVehicleId,
+      checkpointId: checkpointId,
+      reason: reason,
     );
   }
 

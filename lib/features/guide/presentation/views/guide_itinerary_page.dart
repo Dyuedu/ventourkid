@@ -47,6 +47,7 @@ class _GuideItineraryPageState extends ConsumerState<GuideItineraryPage> {
   GuideTourItinerary? _itinerary;
   bool _loading = true;
   bool _completingCheckpoint = false;
+  bool _confirmingManualArrival = false;
   bool _isTeacher = false;
   bool _operationsLocked = false;
   String? _openingPlanItemId;
@@ -289,6 +290,49 @@ class _GuideItineraryPageState extends ConsumerState<GuideItineraryPage> {
       if (mounted) {
         setState(() => _completingCheckpoint = false);
       }
+    }
+  }
+
+  Future<void> _confirmManualArrival(GuideTourItinerary itinerary) async {
+    if (_operationsLocked) {
+      _showPrepLockedSnack();
+      return;
+    }
+    final checkpointId = itinerary.currentCheckpointId;
+    final vehicleId = _resolveGuideVehicle(itinerary);
+    if (checkpointId == null || checkpointId.isEmpty || vehicleId.isEmpty) return;
+    final reason = await showDialog<String>(
+      context: context,
+      builder: (context) => _ManualArrivalDialog(
+        checkpointName: itinerary.currentCheckpointName ?? 'Mốc hiện tại',
+      ),
+    );
+    if (reason == null || !mounted) return;
+    setState(() => _confirmingManualArrival = true);
+    try {
+      await ref.read(offlineAttendanceRepositoryProvider).confirmManualArrival(
+            tourId: widget.tourId,
+            operationVehicleId: vehicleId,
+            checkpointId: checkpointId,
+            reason: reason,
+          );
+      if (!mounted) return;
+      _showFeedback(
+        title: 'Đã xác nhận xe đến',
+        message: 'Đã lưu xác nhận thủ công kèm lý do; dữ liệu GPS không bị thay đổi.',
+        isError: false,
+      );
+      await _loadItinerary();
+    } on Object catch (error) {
+      if (!mounted) return;
+      final apiError = ApiException.maybeFrom(error);
+      _showFeedback(
+        title: 'Chưa thể xác nhận xe đến',
+        message: apiError?.message ?? error.toString().replaceFirst('Exception: ', ''),
+        isError: true,
+      );
+    } finally {
+      if (mounted) setState(() => _confirmingManualArrival = false);
     }
   }
 
@@ -684,9 +728,14 @@ class _GuideItineraryPageState extends ConsumerState<GuideItineraryPage> {
                             currentName: itinerary.currentCheckpointName ?? '—',
                             nextName: itinerary.nextCheckpointName,
                             completing: _completingCheckpoint,
+                            canConfirmManualArrival:
+                                !(itinerary.checkpointById(itinerary.currentCheckpointId)?.isArrived ?? false),
+                            confirmingManualArrival: _confirmingManualArrival,
                             operationsLocked: _operationsLocked,
                             onComplete: () =>
                                 _completeCurrentCheckpoint(itinerary),
+                            onConfirmManualArrival: () =>
+                                _confirmManualArrival(itinerary),
                             onLockedTap: _showPrepLockedSnack,
                           ),
                           const SizedBox(height: 16),
@@ -1007,6 +1056,77 @@ class _CompleteCheckpointDialog extends StatelessWidget {
   }
 }
 
+class _ManualArrivalDialog extends StatefulWidget {
+  const _ManualArrivalDialog({required this.checkpointName});
+
+  final String checkpointName;
+
+  @override
+  State<_ManualArrivalDialog> createState() => _ManualArrivalDialogState();
+}
+
+class _ManualArrivalDialogState extends State<_ManualArrivalDialog> {
+  final _reasonController = TextEditingController();
+  String? _error;
+
+  @override
+  void dispose() {
+    _reasonController.dispose();
+    super.dispose();
+  }
+
+  void _confirm() {
+    final reason = _reasonController.text.trim();
+    if (reason.isEmpty) {
+      setState(() => _error = 'Nhập lý do xác nhận thủ công.');
+      return;
+    }
+    Navigator.of(context).pop(reason);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Xác nhận xe đã đến'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Mốc: ${widget.checkpointName}'),
+          const SizedBox(height: 8),
+          const Text(
+            'Chỉ dùng khi GPS/geofence không thể xác nhận. Thao tác này không sửa dữ liệu GPS.',
+            style: TextStyle(color: AppTheme.onSurfaceVariant, fontSize: 13),
+          ),
+          const SizedBox(height: 14),
+          TextField(
+            controller: _reasonController,
+            maxLength: 500,
+            maxLines: 3,
+            textCapitalization: TextCapitalization.sentences,
+            decoration: InputDecoration(
+              labelText: 'Lý do xác nhận *',
+              hintText: 'Ví dụ: Thiết bị GPS mất tín hiệu tại điểm đến',
+              errorText: _error,
+              border: const OutlineInputBorder(),
+            ),
+            onChanged: (_) {
+              if (_error != null) setState(() => _error = null);
+            },
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Hủy'),
+        ),
+        FilledButton(onPressed: _confirm, child: const Text('Xác nhận')),
+      ],
+    );
+  }
+}
+
 class _DialogStopRow extends StatelessWidget {
   const _DialogStopRow({
     required this.label,
@@ -1097,7 +1217,10 @@ class _CheckpointProgressBanner extends StatelessWidget {
     required this.currentName,
     required this.nextName,
     required this.completing,
+    required this.canConfirmManualArrival,
+    required this.confirmingManualArrival,
     required this.onComplete,
+    required this.onConfirmManualArrival,
     this.operationsLocked = false,
     this.onLockedTap,
   });
@@ -1105,7 +1228,10 @@ class _CheckpointProgressBanner extends StatelessWidget {
   final String currentName;
   final String? nextName;
   final bool completing;
+  final bool canConfirmManualArrival;
+  final bool confirmingManualArrival;
   final VoidCallback onComplete;
+  final VoidCallback onConfirmManualArrival;
   final bool operationsLocked;
   final VoidCallback? onLockedTap;
 
@@ -1150,6 +1276,29 @@ class _CheckpointProgressBanner extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
+          if (!operationsLocked && canConfirmManualArrival) ...[
+            OutlinedButton.icon(
+              onPressed: confirmingManualArrival ? null : onConfirmManualArrival,
+              icon: confirmingManualArrival
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.location_on_outlined, size: 18),
+              label: Text(
+                confirmingManualArrival
+                    ? 'Đang lưu xác nhận…'
+                    : 'Xác nhận xe đã đến',
+              ),
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size.fromHeight(44),
+                foregroundColor: AppTheme.secondary,
+                side: const BorderSide(color: AppTheme.secondary),
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
           SizedBox(
             width: double.infinity,
             child: operationsLocked

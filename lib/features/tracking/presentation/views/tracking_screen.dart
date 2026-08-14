@@ -213,16 +213,11 @@ class _TrackingScreenState extends ConsumerState<TrackingScreen> {
             locations: locations,
             checkpoints: _snapshot.checkpoints,
             alerts: _snapshot.alerts,
-            etas: _snapshot.etas,
           ),
         );
       } on FormatException {
         unawaited(_loadSnapshot(background: true));
       }
-      return;
-    }
-    if (message.type == 'eta.updated') {
-      unawaited(_loadSnapshot(background: true));
       return;
     }
     if (message.type == 'device.state.changed') {
@@ -240,7 +235,6 @@ class _TrackingScreenState extends ConsumerState<TrackingScreen> {
               .toList(growable: false),
           checkpoints: _snapshot.checkpoints,
           alerts: _snapshot.alerts,
-          etas: _snapshot.etas,
         ),
       );
       return;
@@ -264,7 +258,6 @@ class _TrackingScreenState extends ConsumerState<TrackingScreen> {
           locations: _snapshot.locations,
           checkpoints: _snapshot.checkpoints,
           alerts: alerts,
-          etas: _snapshot.etas,
         ),
       );
     }
@@ -313,8 +306,6 @@ class _TrackingScreenState extends ConsumerState<TrackingScreen> {
     final vehicles = _snapshot.locations.where((item) => item.isVehicle).toList();
     final students =
         _snapshot.locations.where((item) => item.isStudent).toList();
-    final selectedEta = _etaForAssignment(selected?.assignmentId);
-    final nextCheckpoint = _checkpointForEta(selectedEta);
 
     return Scaffold(
       backgroundColor: AppTheme.surfaceLight,
@@ -387,17 +378,6 @@ class _TrackingScreenState extends ConsumerState<TrackingScreen> {
                     child: const Text('Thử lại'),
                   ),
                 ],
-              ),
-            ),
-          if (selectedEta != null)
-            Positioned(
-              left: 12,
-              right: 12,
-              top: _error != null ? 72 : 12,
-              child: _EtaCard(
-                eta: selectedEta,
-                checkpointName: nextCheckpoint?.name,
-                vehicleLabel: selected?.displayTitle,
               ),
             ),
           DraggableScrollableSheet(
@@ -561,41 +541,6 @@ class _TrackingScreenState extends ConsumerState<TrackingScreen> {
     );
   }
 
-  TrackingEtaViewModel? _etaForAssignment(String? assignmentId) {
-    if (_snapshot.etas.isEmpty) return null;
-    if (assignmentId != null) {
-      for (final eta in _snapshot.etas) {
-        if (eta.assignmentId == assignmentId) return eta;
-      }
-      final selected = _selectedLocation;
-      if (selected?.coLocatedVehicleId != null) {
-        for (final location in _snapshot.locations) {
-          if (location.isVehicle &&
-              location.targetId == selected!.coLocatedVehicleId) {
-            for (final eta in _snapshot.etas) {
-              if (eta.assignmentId == location.assignmentId) return eta;
-            }
-          }
-        }
-      }
-    }
-    // Prefer ETA of selected vehicle, else first vehicle ETA, else first ETA.
-    for (final location in _snapshot.locations) {
-      if (!location.isVehicle) continue;
-      for (final eta in _snapshot.etas) {
-        if (eta.assignmentId == location.assignmentId) return eta;
-      }
-    }
-    return _snapshot.etas.first;
-  }
-
-  TrackingCheckpointViewModel? _checkpointForEta(TrackingEtaViewModel? eta) {
-    if (eta?.checkpointId == null) return null;
-    for (final checkpoint in _snapshot.checkpoints) {
-      if (checkpoint.id == eta!.checkpointId) return checkpoint;
-    }
-    return null;
-  }
 }
 
 class _TrackerTile extends StatelessWidget {
@@ -651,72 +596,6 @@ class _TrackerTile extends StatelessWidget {
           ? const Icon(Iconsax.tick_circle, color: AppTheme.primary, size: 20)
           : null,
       onTap: onTap,
-    );
-  }
-}
-
-class _EtaCard extends StatelessWidget {
-  const _EtaCard({
-    required this.eta,
-    this.checkpointName,
-    this.vehicleLabel,
-  });
-
-  final TrackingEtaViewModel eta;
-  final String? checkpointName;
-  final String? vehicleLabel;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      elevation: 3,
-      borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-      color: AppTheme.surface,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-        child: Row(
-          children: [
-            Icon(
-              eta.delayed || !eta.hasRouteEstimate
-                  ? Icons.schedule
-                  : Icons.navigation_outlined,
-              color: eta.delayed || !eta.hasRouteEstimate
-                  ? AppTheme.accentOrange
-                  : AppTheme.primary,
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    checkpointName == null
-                        ? 'Điểm dừng tiếp theo'
-                        : 'Đến: $checkpointName',
-                    style: const TextStyle(fontWeight: FontWeight.w700),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    eta.hasRouteEstimate
-                        ? [
-                            if (vehicleLabel != null) vehicleLabel!,
-                            eta.distanceLabel,
-                            eta.durationLabel,
-                            if (eta.delayed) 'Trễ',
-                            if (eta.availabilityLabel != null)
-                              eta.availabilityLabel!,
-                          ].join(' · ')
-                        : eta.availabilityLabel ??
-                            'Đang chờ tính thời gian đến',
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

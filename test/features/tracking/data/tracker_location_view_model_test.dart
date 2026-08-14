@@ -56,16 +56,6 @@ void main() {
       expect(checkpoint.checkpointType, 'ACTIVITY');
       expect(checkpoint.sequenceNo, 2);
 
-      final alert = TrackingAlertViewModel.fromJson({
-        'id': 'alert-1',
-        'alertType': 'ETA_DELAY',
-        'severity': 'WARNING',
-        'status': 'OPEN',
-        'title': 'Trễ',
-        'message': 'Xe đang trễ',
-      });
-      expect(alert.type, 'ETA_DELAY');
-
       final snapshot = TrackingSnapshotViewModel.fromJson({
         'locations': [
           {
@@ -95,22 +85,11 @@ void main() {
             'message': 'Mất tín hiệu',
           },
         ],
-        'etas': [
-          {
-            'assignmentId': 'vehicle-1',
-            'checkpointId': 'cp-1',
-            'distanceMeters': 1200,
-            'durationSeconds': 300,
-            'delayed': false,
-          },
-        ],
       });
       // Keep tracker assignments with no fix so the UI can show their offline
       // state instead of silently hiding them.
       expect(snapshot.locations, hasLength(2));
       expect(snapshot.locations.last.hasCoordinates, isFalse);
-      expect(snapshot.etas, hasLength(1));
-      expect(snapshot.etas.first.distanceLabel, '1.2 km');
     });
 
     test('keeps an assignment without a location fix', () {

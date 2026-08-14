@@ -1068,7 +1068,7 @@ class _ParentDashboardPageState extends ConsumerState<ParentDashboardPage> {
                 _JourneyCard(
                   journey: data.currentJourney,
                   livestreamActive: data.trip?.livestreamActive == true,
-                  onTap: () => _showTripInfo(context, ref, data),
+                  onTap: null,
                   onWatchLive: () => _openLivestream(context, ref, data),
                   onWatchVod: () => _openReplayHistory(context, data),
                 ),
@@ -1429,7 +1429,7 @@ class _JourneyCard extends StatelessWidget {
 
   final ParentJourneySummary journey;
   final bool livestreamActive;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
   final VoidCallback onWatchLive;
   final VoidCallback onWatchVod;
 
@@ -1505,14 +1505,6 @@ class _JourneyCard extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(width: 16),
-                        Expanded(
-                          child: _Metric(
-                            label: 'ETA',
-                            value: journey.estimatedArrival,
-                            alignment: CrossAxisAlignment.end,
-                            textAlign: TextAlign.end,
-                          ),
-                        ),
                       ],
                     ),
                     const Padding(

@@ -319,83 +319,16 @@ class TrackingAlertViewModel {
   }
 }
 
-class TrackingEtaViewModel {
-  const TrackingEtaViewModel({
-    required this.assignmentId,
-    this.checkpointId,
-    this.distanceMeters,
-    this.durationSeconds,
-    this.estimatedArrivalAt,
-    this.delayed = false,
-    this.providerStatus,
-  });
-
-  final String assignmentId;
-  final String? checkpointId;
-  final double? distanceMeters;
-  final int? durationSeconds;
-  final DateTime? estimatedArrivalAt;
-  final bool delayed;
-  final String? providerStatus;
-
-  bool get hasRouteEstimate =>
-      distanceMeters != null && durationSeconds != null && estimatedArrivalAt != null;
-
-  String? get availabilityLabel {
-    switch (providerStatus?.toUpperCase()) {
-      case 'STALE':
-        return 'Đang dùng ETA gần nhất';
-      case 'UNAVAILABLE':
-        return 'Chưa thể tính thời gian đến';
-      default:
-        return null;
-    }
-  }
-
-  factory TrackingEtaViewModel.fromJson(Map<String, dynamic> json) {
-    return TrackingEtaViewModel(
-      assignmentId: json['assignmentId']?.toString() ?? '',
-      checkpointId: json['checkpointId']?.toString(),
-      distanceMeters: (json['distanceMeters'] as num?)?.toDouble(),
-      durationSeconds: (json['durationSeconds'] as num?)?.toInt(),
-      estimatedArrivalAt: DateTime.tryParse(
-        json['estimatedArrivalAt']?.toString() ?? '',
-      ),
-      delayed: json['delayed'] == true,
-      providerStatus: json['providerStatus']?.toString(),
-    );
-  }
-
-  String get distanceLabel {
-    final meters = distanceMeters;
-    if (meters == null) return '--';
-    if (meters < 1000) return '${meters.round()} m';
-    return '${(meters / 1000).toStringAsFixed(1)} km';
-  }
-
-  String get durationLabel {
-    final seconds = durationSeconds;
-    if (seconds == null) return '--';
-    final minutes = (seconds / 60).round();
-    if (minutes < 60) return '$minutes phút';
-    final hours = minutes ~/ 60;
-    final rem = minutes % 60;
-    return rem == 0 ? '$hours giờ' : '$hours giờ $rem phút';
-  }
-}
-
 class TrackingSnapshotViewModel {
   const TrackingSnapshotViewModel({
     required this.locations,
     required this.checkpoints,
     required this.alerts,
-    this.etas = const [],
   });
 
   final List<TrackerLocationViewModel> locations;
   final List<TrackingCheckpointViewModel> checkpoints;
   final List<TrackingAlertViewModel> alerts;
-  final List<TrackingEtaViewModel> etas;
 
   factory TrackingSnapshotViewModel.fromJson(Map<String, dynamic> json) {
     List<T> parseList<T>(
@@ -419,7 +352,6 @@ class TrackingSnapshotViewModel {
         'activeAlerts',
         (map) => TrackingAlertViewModel.fromJson(map),
       ),
-      etas: parseList('etas', (map) => TrackingEtaViewModel.fromJson(map)),
     );
   }
 }
