@@ -61,6 +61,28 @@ void main() {
         expect(viewModel.state.errorMessage, isNull);
       },
     );
+
+    test('resets account-scoped state after logout and a successful login', () async {
+      final repository = _FakeAuthRepository();
+      var sessionTransitions = 0;
+      final viewModel = AuthViewModel(
+        repository,
+        onSessionChanged: () async {
+          sessionTransitions++;
+        },
+      );
+      addTearDown(viewModel.dispose);
+
+      expect(await viewModel.logout(), isTrue);
+      final login = viewModel.login(
+        identifier: 'parent@example.com',
+        password: 'password1!',
+      );
+      repository.completeLogin();
+      expect(await login, isTrue);
+
+      expect(sessionTransitions, 2);
+    });
   });
 }
 

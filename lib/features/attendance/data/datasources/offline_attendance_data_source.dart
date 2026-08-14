@@ -477,6 +477,7 @@ abstract interface class AttendanceLocalDataSource {
 }
 
 class AttendanceLocalDataSourceImpl implements AttendanceLocalDataSource {
+  static const storagePrefix = 'attendance.offline.';
   static const _toursKey = 'attendance.offline.tours';
   static const _activeSessionKey = 'attendance.offline.activeSession';
   static const _queueKey = 'attendance.offline.queue';
@@ -486,6 +487,19 @@ class AttendanceLocalDataSourceImpl implements AttendanceLocalDataSource {
   static const _faceTemplatesPrefix = 'attendance.offline.faceTemplates.';
 
   const AttendanceLocalDataSourceImpl();
+
+  /// Offline attendance data contains student and tour information. It must
+  /// never become a fallback source for a different account after logout.
+  static Future<void> clearPersistedData() async {
+    final preferences = await SharedPreferences.getInstance();
+    final keys = preferences
+        .getKeys()
+        .where((key) => key.startsWith(storagePrefix))
+        .toList(growable: false);
+    for (final key in keys) {
+      await preferences.remove(key);
+    }
+  }
 
   @override
   Future<List<AttendanceTour>> getCachedTours() async {

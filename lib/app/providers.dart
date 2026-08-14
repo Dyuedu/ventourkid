@@ -14,6 +14,7 @@ import '../features/auth/domain/repositories/auth_repository.dart';
 import '../features/auth/presentation/viewmodels/auth_view_model.dart';
 import '../features/auth/presentation/viewmodels/auth_view_state.dart';
 import '../features/attendance/data/datasources/offline_attendance_data_source.dart';
+import '../features/tracking/data/services/tracking_offline_outbox.dart';
 import '../features/face_attendance/data/datasources/face_remote_data_source.dart';
 import '../features/face_attendance/data/services/mobile_face_embedding_service.dart';
 import '../features/livestream/data/datasources/livestream_remote_data_source.dart';
@@ -87,8 +88,26 @@ final authRepositoryProvider = Provider<AuthRepository>((ref) {
 
 final authViewModelProvider =
     StateNotifierProvider<AuthViewModel, AuthViewState>((ref) {
-      return AuthViewModel(ref.watch(authRepositoryProvider));
+      return AuthViewModel(
+        ref.watch(authRepositoryProvider),
+        onSessionChanged: () => _resetAccountScopedState(ref),
+      );
     });
+
+/// Establish a strict boundary between two mobile accounts on one device.
+/// Tokens alone are insufficient because Riverpod and offline stores outlive a
+/// route change.
+Future<void> _resetAccountScopedState(Ref ref) async {
+  await ref.read(notificationRealtimeProvider.notifier).stop();
+  await AttendanceLocalDataSourceImpl.clearPersistedData();
+  await TrackingOfflineOutbox.clearPersistedData();
+
+  ref.invalidate(parentDashboardViewModelProvider);
+  ref.invalidate(livestreamViewModelProvider);
+  ref.invalidate(incidentViewModelProvider);
+  ref.invalidate(aiAssistantViewModelProvider);
+  ref.invalidate(notificationRealtimeProvider);
+}
 
 final profileRemoteDataSourceProvider = Provider<ProfileRemoteDataSource>((ref) {
   return ProfileRemoteDataSourceImpl(ref.watch(dioClientProvider));
@@ -120,7 +139,7 @@ final parentDashboardRepositoryProvider = Provider<ParentDashboardRepository>((
 });
 
 final parentDashboardViewModelProvider =
-    StateNotifierProvider<ParentDashboardViewModel, ParentDashboardViewState>((
+    StateNotifierProvider.autoDispose<ParentDashboardViewModel, ParentDashboardViewState>((
       ref,
     ) {
       return ParentDashboardViewModel(

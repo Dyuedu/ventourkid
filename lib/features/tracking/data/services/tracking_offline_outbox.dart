@@ -9,6 +9,13 @@ class TrackingOfflineOutbox {
   static const _storageKey = 'ventourkids.tracking.command_outbox.v1';
   static const _uuid = Uuid();
 
+  /// Commands created by one field account must not be sent under another
+  /// account after a device is handed over.
+  static Future<void> clearPersistedData() async {
+    final preferences = await SharedPreferences.getInstance();
+    await preferences.remove(_storageKey);
+  }
+
   Future<void> enqueueIncident(
     String operationPlanId,
     Map<String, dynamic> payload,

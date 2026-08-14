@@ -7,9 +7,14 @@ import '../../domain/repositories/auth_repository.dart';
 import 'auth_view_state.dart';
 
 class AuthViewModel extends StateNotifier<AuthViewState> {
-  AuthViewModel(this._repository) : super(const AuthViewState());
+  AuthViewModel(
+    this._repository, {
+    Future<void> Function()? onSessionChanged,
+  }) : _onSessionChanged = onSessionChanged,
+       super(const AuthViewState());
 
   final AuthRepository _repository;
+  final Future<void> Function()? _onSessionChanged;
 
   Future<bool> sendRegisterOtp({required String identifier}) {
     return _execute(
@@ -124,8 +129,10 @@ class AuthViewModel extends StateNotifier<AuthViewState> {
     try {
       await action();
       if (enforceMobileRole && !await _enforceMobileRoleAllowed()) {
+        await _notifySessionChanged(operation);
         return false;
       }
+      await _notifySessionChanged(operation);
       state = const AuthViewState();
       return true;
     } on Object catch (error) {
@@ -134,5 +141,14 @@ class AuthViewModel extends StateNotifier<AuthViewState> {
       );
       return false;
     }
+  }
+
+  Future<void> _notifySessionChanged(AuthOperation operation) async {
+    if (operation != AuthOperation.login &&
+        operation != AuthOperation.googleLogin &&
+        operation != AuthOperation.logout) {
+      return;
+    }
+    await _onSessionChanged?.call();
   }
 }
